@@ -73,7 +73,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 double y = location.getLongitude();
                 latitude.setText("" + x);
                 longtitude.setText("" + y);
-                Toast.makeText(MapsActivity.this, "Your location is " + x + ", " + y, Toast.LENGTH_LONG);
             }
         });
     }
@@ -96,7 +95,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double y = location.getLongitude();
         latitude.setText("" + x);
         longtitude.setText("" + y);
-        Toast.makeText(MapsActivity.this, "Your location is " + x + ", " + y, Toast.LENGTH_LONG);
     }
 
     @Override
