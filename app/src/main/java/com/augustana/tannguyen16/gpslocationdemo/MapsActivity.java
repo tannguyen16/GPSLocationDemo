@@ -17,6 +17,11 @@ import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -33,7 +38,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     MarkerOptions mo;
     Marker marker;
     LocationManager locationManager;
-
+    private LatLng markerCoordinates;
+    private EditText latitude;
+    private EditText longtitude;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,15 +52,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mo = new MarkerOptions().position(new LatLng(0, 0)).title("My Current Location");
         if (Build.VERSION.SDK_INT >= 23 && !isPermissionGranted()) {
             requestPermissions(PERMISSIONS, PERMISSION_ALL);
-        } else requestLocation();
+        }
+        latitude = (EditText) findViewById(R.id.editText);
+        longtitude = (EditText) findViewById(R.id.editText2);
+        requestLocation();
         if (!isLocationEnabled())
             showAlert(1);
+        Button button = (Button) findViewById(R.id.button2);
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+                if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 30000, 0, (LocationListener) MapsActivity.this);
+                Criteria criteria = new Criteria();
+                String bestProvider = locationManager.getBestProvider(criteria, true);
+                Location location = locationManager.getLastKnownLocation(bestProvider);
+                double x = location.getLatitude();
+                double y = location.getLongitude();
+                latitude.setText("" + x);
+                longtitude.setText("" + y);
+                Toast.makeText(MapsActivity.this, "Your location is " + x + ", " + y, Toast.LENGTH_LONG);
+            }
+        });
     }
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        marker =  mMap.addMarker(mo);
+        marker = mMap.addMarker(mo);
         mMap.moveCamera(CameraUpdateFactory.zoomTo(12.0f));
     }
 
@@ -62,7 +91,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng myCoordinates = new LatLng(location.getLatitude(), location.getLongitude());
         marker.setPosition(myCoordinates);
         mMap.moveCamera(CameraUpdateFactory.newLatLng(myCoordinates));
-
+        markerCoordinates = marker.getPosition();
+        double x = location.getLatitude();
+        double y = location.getLongitude();
+        latitude.setText("" + x);
+        longtitude.setText("" + y);
+        Toast.makeText(MapsActivity.this, "Your location is " + x + ", " + y, Toast.LENGTH_LONG);
     }
 
     @Override
@@ -79,13 +113,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onProviderDisabled(String s) {
 
     }
+
     private void requestLocation() {
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         criteria.setPowerRequirement(Criteria.POWER_HIGH);
         String provider = locationManager.getBestProvider(criteria, true);
-        if ( ContextCompat.checkSelfPermission( this, android.Manifest.permission.ACCESS_COARSE_LOCATION ) != PackageManager.PERMISSION_GRANTED ) {
-           return;
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
         }
         locationManager.requestLocationUpdates(provider, 10000, 10, this);
     }
@@ -95,8 +131,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private boolean isPermissionGranted() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED || checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             Log.v("mylog", "Permission is granted");
             return true;
@@ -127,8 +163,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         if (status == 1) {
                             Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                             startActivity(myIntent);
-                        } else
-                            ActivityCompat.requestPermissions(MapsActivity.this, PERMISSIONS, PERMISSION_ALL);
+                        } else requestPermissions(PERMISSIONS, PERMISSION_ALL);
                     }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
